@@ -1,6 +1,7 @@
 const express = require('express')
 const app = express()
-const db = require('cyclic-dynamodb')
+const CyclicDb = require('cyclic-dynamodb')
+const db = CyclicDb(env.process.CYCLIC_TABLE)
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
@@ -19,6 +20,22 @@ app.use(express.urlencoded({ extended: true }))
 // app.use(express.static('public', options))
 // #############################################################################
 
+app.get('/user/:userId', async (req, res) => {
+  req.params;
+  res.json(req.params);
+});
+
+
+// Get a single item
+app.get('/:col/:key', async (req, res) => {
+  const col = req.params.col
+  const key = req.params.key
+  console.log(`from collection: ${col} get key: ${key} with params ${JSON.stringify(req.params)}`);
+  const item = await db.collection(col).get(key)
+  console.log(item)
+  res.json(item).end()
+})
+
 // Create or Update an item
 app.post('/:col/:key', async (req, res) => {
   console.log(req.body)
@@ -27,7 +44,7 @@ app.post('/:col/:key', async (req, res) => {
   const key = req.params.key
   console.log(`from collection: ${col} delete key: ${key} with params ${JSON.stringify(req.params)}`)
   const item = await db.collection(col).set(key, req.body)
-  console.log(JSON.stringify(item, null, 2))
+  console.log(item)
   res.json(item).end()
 })
 
@@ -37,7 +54,7 @@ app.delete('/:col/:key', async (req, res) => {
   const key = req.params.key
   console.log(`from collection: ${col} delete key: ${key} with params ${JSON.stringify(req.params)}`)
   const item = await db.collection(col).delete(key)
-  console.log(JSON.stringify(item, null, 2))
+  console.log(item)
   res.json(item).end()
 })
 
@@ -61,12 +78,22 @@ app.get('/:col', async (req, res) => {
 })
 
 // Catch all handler for all other request.
-app.use('*', (req, res) => {
-  res.json({ msg: 'no route handler found' }).end()
-})
+app.use(express.static('www'));
 
 // Start the server
 const port = process.env.PORT || 3000
 app.listen(port, () => {
   console.log(`index.js listening on ${port}`)
 })
+
+/*
+aws dynamodb create-table \
+  --attribute-definitions \
+    AttributeName=video,AttributeType=S \
+  --key-schema \
+    AttributeName=video,KeyType=HASH \
+  --table-name videosTable \
+  --provisioned-throughput \
+    ReadCapacityUnits=1,WriteCapacityUnits=1
+
+*/
